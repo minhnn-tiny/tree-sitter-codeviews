@@ -1,4 +1,4 @@
-from tree_sitter import Language, Parser
+from tree_sitter import Language, Parser, Node
 
 
 class CustomParser:
@@ -24,6 +24,7 @@ class CustomParser:
                 "vendor/tree-sitter-php",
                 "vendor/tree-sitter-python",
                 "vendor/tree-sitter-javascript",
+                "vendor/tree-sitter-solidity",
             ],
         )
         PYTHON_LANGUAGE = Language("build/my-languages.so", "python")
@@ -33,6 +34,7 @@ class CustomParser:
         GO_LANGUAGE = Language("build/my-languages.so", "go")
         PHP_LANGUAGE = Language("build/my-languages.so", "php")
         JAVASCRIPT_LANGUAGE = Language("build/my-languages.so", "javascript")
+        SOLIDITY_LANGUAGE =Language("build/my-languages.so", "solidity")
 
         self.language_map = {
             "python": PYTHON_LANGUAGE,
@@ -42,6 +44,7 @@ class CustomParser:
             "go": GO_LANGUAGE,
             "php": PHP_LANGUAGE,
             "javascript": JAVASCRIPT_LANGUAGE,
+            "solidity": SOLIDITY_LANGUAGE,
         }
         self.root_node = self.parse()
         self.all_tokens = []

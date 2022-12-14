@@ -7,12 +7,32 @@ class CFGGraph_solidity(CFGGraph):
         super().__init__(src_language, src_code, properties, root_node, parser)
 
         self.statement_types =  {
-            'node_list_type':['declaration', 'expression_statement', 'labeled_statement', 'if_statement', 'while_statement', 'for_statement', 'enhanced_for_statement', 'assert_statement', 'do_statement', 'break_statement', 'continue_statement', 'return_statement', 'yield_statement', 'switch_expression', 'synchronized_statement', 'local_variable_declaration', 'throw_statement', 'try_statement', 'try_with_resources_statement', 'method_declaration','constructor_declaration', 'switch_block_statement_group', 'switch_rule', 'throw_statement', 'explicit_constructor_invocation'],
-            'non_control_statement' : ['declaration', 'expression_statement', 'local_variable_declaration'],
+            'node_list_type':['declaration', 'expression_statement', 'labeled_statement', 'if_statement', 'while_statement', 'for_statement', 'enhanced_for_statement', 'assert_statement', 'do_statement', 'break_statement', 'continue_statement', 'return_statement', 'yield_statement', 'switch_expression', 'synchronized_statement', 'local_variable_declaration', 'throw_statement', 'try_statement', 'try_with_resources_statement', 'method_declaration','constructor_declaration', 'switch_block_statement_group', 'switch_rule', 'throw_statement', 'explicit_constructor_invocation', 'variable_declaration_statement', 'state_variable_declaration', 'variable_declaration',
+            # 'contract_declaration',
+            # 'contract_body',
+            'function_definition',
+            # 'function_body',
+            'return_statement',
+            'struct_declaration',
+            'modifier_definition',
+            'modifier_invocation',
+            'augmented_assignment_expression',
+            ],
+            'non_control_statement' : ['declaration', 'expression_statement', 'local_variable_declaration', 'variable_declaration_statement', 'state_variable_declaration', 'variable_declaration',
+            # 'contract_declaration',
+            # 'contract_body',
+            'function_definition',
+            # 'function_body',
+            'return_statement',
+            'struct_declaration',
+            'modifier_definition',
+            'modifier_invocation',
+            'augmented_assignment_expression',
+            ],
             'control_statement' : ['if_statement', 'while_statement', 'for_statement', 'enhanced_for_statement', 'do_statement', 'break_statement', 'continue_statement', 'return_statement', 'yield_statement', 'switch_expression', 'synchronized_statement',  'try_statement', 'try_with_resources_statement', 'yield_statement'],
             'loop_control_statement' : ['while_statement', 'for_statement', 'enhanced_for_statement'],
             'not_implemented' : ['try_with_resources_statement'],
-            'inner_node_type': ['declaration', 'expression_statement', 'local_variable_declaration'],
+            'inner_node_type': ['declaration', 'expression_statement', 'local_variable_declaration', 'function_definition'],
             'outer_node_type' : ['for_statement']           
         }
 
@@ -27,7 +47,7 @@ class CFGGraph_solidity(CFGGraph):
         }
         
         self.index_counter = max(self.index.values())
-        self.CFG_node_list, self.CFG_edge_list = self.CFG_java() 
+        self.CFG_node_list, self.CFG_edge_list = self.CFG_solidity() 
         self.graph = self.to_networkx(self.CFG_node_list, self.CFG_edge_list)
 
 
@@ -59,6 +79,7 @@ class CFGGraph_solidity(CFGGraph):
         if src_node == None or dest_node == None:
             print("Node where adding edge is attempted is none")
         else:
+            # print(f'Added {src_node} -> {dest_node}, edge type {edge_type}')
             self.CFG_edge_list.append((src_node, dest_node, edge_type))
 
     def get_next_index(self, node_key, node_value):
@@ -79,7 +100,8 @@ class CFGGraph_solidity(CFGGraph):
 
         if next_node == None:
             return 2
-        if next_node.type == 'block':
+
+        if next_node.type == 'block_statement':
             for child in next_node.children:
                 if child.is_named:
                     next_node = child
@@ -109,13 +131,18 @@ class CFGGraph_solidity(CFGGraph):
         # We need to add an edge to the first statement in the body block
         src_node = self.index[current_node_key]
         body_node = current_node_value.child_by_field_name(body_type)
-        print('body node: ', body_node)
         if body_node.type == 'block_statement':
             for child in body_node.children:
                 if child.is_named:
                     body_node = child
                     break
-        if body_node.is_named and body_node.type in self.statement_types['node_list_type']:          
+        if body_type == 'else' and edge_type == 'neg_next':
+            # print('else body node: ', current_node_value.children)
+            body_node = list(filter(lambda child : (child.is_named == True
+                                                   and (child.type == 'if_statement' 
+                                                        or child.type == 'block_statement'
+                                                        or child.type == 'return_statement')), current_node_value.children))[-1]
+        if body_node.is_named and body_node.type in self.statement_types['node_list_type']:
             dest_node = self.index[(body_node.start_point, body_node.end_point, body_node.type)]
             self.add_edge(src_node, dest_node, edge_type)
 
@@ -131,7 +158,7 @@ class CFGGraph_solidity(CFGGraph):
         if block_node.is_named is False:
             return self.index[(current_node_value.start_point, current_node_value.end_point, current_node_value.type)], current_node_value.type
        
-        while block_node.type == 'block':
+        while block_node.type == 'block_statement':
             named_children = list(filter(lambda child : child.is_named == True, reversed(block_node.children)))
             if len(named_children) == 0:
                 # It means there is an empty block - thats why no named nodes inside
@@ -141,8 +168,27 @@ class CFGGraph_solidity(CFGGraph):
                 return self.index[(block_node.start_point, block_node.end_point, block_node.type)], block_node.type
         return self.index[(block_node.start_point, block_node.end_point, block_node.type)], block_node.type
 
+    
+    def get_if_statement_last_line(self, node_value):
+        current_node = node_value
+        while current_node.type == 'if_statement':
+            else_node = current_node.child_by_field_name('else')
+            if else_node is not None:
+                else_if_node = list(filter(lambda child : (child.type == 'if_statement'), current_node.children))
+                if len(else_if_node) > 0:
+                    current_node = else_if_node[0]
+                else:
+                    current_node = list(filter(lambda child : (child.is_named == True and
+                                                                child.type in self.statement_types['non_control_statement']), reversed(current_node.children)))[0]
+        if current_node.type in self.statement_types['non_control_statement']:
+            named_children = list(filter(lambda child : (child.is_named == True and child.type in self.statement_types['non_control_statement']), reversed(current_node.children)))
+            if len(named_children) > 0:
+                current_node = named_children[0]
+        return self.index[(current_node.start_point, current_node.end_point, current_node.type)], current_node.type
+
+
     def function_list(self, current_node):
-        if current_node.type == 'method_invocation':
+        if current_node.type == 'method_invocation':  # or current_node.type == 'function_definition':
         # maintain a list of all method invocations
             method_name = current_node.child_by_field_name('name').text.decode('UTF-8')
             
@@ -184,29 +230,45 @@ class CFGGraph_solidity(CFGGraph):
                 else:
                     self.add_edge(node[1], self.records['method_list'][node_name], 'recursive_method_call')
 
-    def CFG_java(self):
+    def CFG_solidity(self):
         warning_counter = 0
         node_list = {}
         # node_list is a dictionary that maps from (node.start_point, node.end_point, node.type) to the node object of tree-sitter
         _,node_list, self.CFG_node_list, self.records = solidity_nodes.get_nodes(root_node = self.root_node, node_list = node_list, graph_node_list = self.CFG_node_list, index = self.index, records = self.records, statement_types = self.statement_types)
         # Initial for loop required for basic block creation and simple control flow within a block ----------------------------
+        print('First round of adding edges ===============')
+        # print(self.index)
         for node_key, node_value in node_list.items():
+            # print(self.index[node_key], node_value)
             current_node_type = node_key[2]
             if current_node_type in self.statement_types['non_control_statement']:
                 if solidity_nodes.return_switch_child(node_value) is None:
-                    try: 
-                        next_node = node_value.next_named_sibling
+                    # try:
+                    next_node = node_value.next_named_sibling
+                    if next_node:
                         src_node = self.index[node_key]
                         dest_node = self.index[(next_node.start_point, next_node.end_point, next_node.type)]
                         if dest_node in self.records['switch_child_map'].keys():
                             dest_node = self.records['switch_child_map'][dest_node]
+                        # print(f'Added {src_node} -> {dest_node}')
+                        else_nodes = list(filter(lambda child : (child.type == 'else'), node_value.parent.children))
+                        # print(else_nodes)
+                        # print(node_value.type)
+                        # print(node_list[(next_node.start_point, next_node.end_point, next_node.type)].type)
+                        if node_value.type == 'expression_statement' and len(else_nodes) > 0 and node_list[(next_node.start_point, next_node.end_point, next_node.type)].type == 'if_statement':
+                            # print('In if else ledders ====================')
+                            continue
+                        elif node_value.type == 'if_statement':
+                            # print('From if statement ====================')
+                            continue
                         self.add_edge(src_node, dest_node, 'next_line')
-                    except: 
-                        pass
+                    # except: 
+                        # pass
 
             elif current_node_type in self.statement_types['not_implemented']:
                 print("WARNING: Not implemented ", current_node_type)
                 warning_counter += 1
+
 
         self.get_basic_blocks(self.CFG_node_list, self.CFG_edge_list)
         self.CFG_node_list = self.append_block_index(self.CFG_node_list)
@@ -218,7 +280,8 @@ class CFGGraph_solidity(CFGGraph):
         #------------------------------------------------------------------------------
         # At this point, the self.CFG_node_list has basic block index appended to it
         #------------------------------------------------------------------------------
-        for node_key, node_value in node_list.items():
+        for idx, (node_key, node_value) in enumerate(node_list.items()):
+            # print('node no.', idx, node_key)
             current_node_type = node_key[2]
             current_index = self.index[node_key]
             if current_node_type == 'method_declaration' or current_node_type == 'constructor_declaration':
@@ -248,18 +311,20 @@ class CFGGraph_solidity(CFGGraph):
                 # Find the line just after the entire if_statement
                 next_dest_index = self.get_next_index(node_key, node_value)
                 # consequence
+                # print(node_value.children)
                 self.edge_to_body(node_key, node_value, 'body', 'pos_next')
                 # Find the last line in the consequence block and add an edge to the next statement
                 last_line_index, line_type = self.get_block_last_line(node_value, 'body')
                 # Also add an edge from the last guy to the next statement after the if
                 # print(last_line_index, line_type)
                 if line_type in self.statement_types['non_control_statement']:
+                    # print('Adding edge to non_control')
                     self.add_edge(last_line_index, next_dest_index, 'next_line')
 
-                #else = node_value.child_by_field_name('else')
-                #print("else", else)
+                # print("Else by child field", node_value.child_by_field_name('else'))
                 if node_value.child_by_field_name('else') is not None:
-
+                    else_node = node_value.child_by_field_name('else')
+                    # print("else node: ", else_node.children)
                     # else
                     self.edge_to_body(node_key, node_value, 'else', 'neg_next')
                     # Find the last line in the else block 
@@ -269,28 +334,41 @@ class CFGGraph_solidity(CFGGraph):
                         self.add_edge(last_line_index, next_dest_index, 'next_line')
                 else:
                     # When else is not there add a direct edge from if node to the next statement
-                    self.add_edge(current_index, next_dest_index, 'next_line')
+                    # print('Not else: ', next_dest_index)
+                    self.add_edge(current_index, next_dest_index, 'neg_next')
                     
             # ------------------------------------------------------------------------------------------------
             elif current_node_type in self.statement_types['loop_control_statement']:
+                # print('Loop control statement: ', node_value)
                 # Get the node immediately after the while statement
                 next_dest_index = self.get_next_index(node_key, node_value)
 
                 # Add an edge from this node to the first line in the body
+                # print('Body child: ', node_value.children)
                 self.edge_to_body(node_key, node_value, 'body', 'pos_next')
 
                 # Find the last line in the body block 
                 last_line_index, line_type = self.get_block_last_line(node_value, 'body')
-
+                # print('Last statement: ', last_line_index, line_type)
                 # Add an edge from this node to the next line after the loop statement
                 self.add_edge(current_index, next_dest_index, 'neg_next')
                 # Add an edge from the last statement in the body to this node
                 if line_type in self.statement_types['non_control_statement']:
-                    self.add_edge(last_line_index, current_index, 'loop_control')
+                    if current_node_type == 'for_statement':
+                        condition_node = node_value.child_by_field_name('update')
+                        condition_node_id = self.index[(condition_node.start_point,condition_node.end_point,condition_node.type)]
+                        self.add_edge(last_line_index, condition_node_id, 'loop_control')
+                    # self.add_edge(last_line_index, current_index, 'loop_control')
+                elif line_type == 'if_statement':
+                    last_line_index, line_type = self.get_block_last_line(node_value, 'body')
+                    condition_node = node_value.child_by_field_name('update')
+                    condition_node_id = self.index[(condition_node.start_point,condition_node.end_point,condition_node.type)]
+                    self.add_edge(last_line_index, condition_node_id, 'loop_control')
+                
 
                 #Add a self loop in case of for loops
                 if current_node_type != 'while_statement':
-                    self.add_edge(current_index, current_index, 'loop_update')
+                    self.add_edge(condition_node_id, current_index, 'loop_update')
 
             # ------------------------------------------------------------------------------------------------
             elif current_node_type == 'do_statement':

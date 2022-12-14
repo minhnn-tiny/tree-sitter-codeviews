@@ -1,4 +1,5 @@
 from tree_parser.java_parser import JavaParser
+from tree_parser.solidity_parser import SolidityParser
 # from tree_parser.python_parser import PythonParser
 from utils import preprocessor
 
@@ -12,6 +13,7 @@ class ParserDriver():
 
         self.parser_map = {
             'java': JavaParser,
+            'solidity': SolidityParser,
             # 'python': PythonParser
             # Add more languages here
         }
@@ -19,6 +21,7 @@ class ParserDriver():
         self.root_node = self.parser.parse()
         self.all_tokens, self.label, self.method_map, self.start_line= self.create_all_tokens()      
 
+    @classmethod
     def pre_process_src_code(self, src_language, src_code):
         """Pre-process the source code"""
         src_code  = preprocessor.remove_empty_lines(src_code)

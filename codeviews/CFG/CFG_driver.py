@@ -1,4 +1,5 @@
 from codeviews.CFG.CFG_java import CFGGraph_java
+from codeviews.CFG.CFG_solidity import CFGGraph_solidity
 # from codeviews.CFG.CFG_python import CFGGraph_python
 from tree_parser.parser_driver import ParserDriver
 from utils import postprocessor
@@ -20,7 +21,8 @@ class CFGDriver:
         self.properties = properties
 
         self.CFG_map = {
-                        "java": CFGGraph_java, 
+                        "java": CFGGraph_java,
+                        "solidity": CFGGraph_solidity,
                         # "python": CFGGraph_python
                         }
 
@@ -32,6 +34,7 @@ class CFGDriver:
             self.parser,
         )
         self.graph = self.CFG.graph
-
-        postprocessor.write_to_dot(self.graph, "./output_graphs/CFG_output.dot")
+        
+        if output_file is not None:
+            postprocessor.write_to_dot(self.graph, output_file)
         # postprocessor.write_networkx_to_json(self.graph, "./output_json/CFG_output.json")

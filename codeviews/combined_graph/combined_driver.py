@@ -14,13 +14,13 @@ class CombinedDriver():
         self.graph = nx.MultiDiGraph()
 
         if self.codeviews["DFG"]["exists"] == True:
-            self.DFG = DFGDriver(self.src_language, self.src_code, "", self.codeviews["DFG"]).graph
+            self.DFG = DFGDriver(self.src_language, self.src_code, None, self.codeviews["DFG"]).graph
 
         if self.codeviews["AST"]["exists"] == True:
-            self.AST = ASTDriver(self.src_language, self.src_code, "", self.codeviews["AST"]).graph
+            self.AST = ASTDriver(self.src_language, self.src_code, None, self.codeviews["AST"]).graph
 
         if self.codeviews["CFG"]["exists"] == True:
-            self.CFG = CFGDriver(self.src_language, self.src_code, "", self.codeviews["CFG"]).graph
+            self.CFG = CFGDriver(self.src_language, self.src_code, None, self.codeviews["CFG"]).graph
 
         self.combine()
         if graph_format == "json":

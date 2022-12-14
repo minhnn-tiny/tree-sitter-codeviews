@@ -11,6 +11,7 @@ class ASTDriver:
         self.root_node = self.parser.root_node
         self.AST = ASTGraph(self.src_language, self.src_code, self.properties, self.root_node, self.parser)
         self.graph = self.AST.graph
-    
-        postprocessor.write_to_dot(self.graph, "./output_graphs/AST_output.dot")
+
+        if output_file is not None:
+            postprocessor.write_to_dot(self.graph, output_file)
         # postprocessor.write_networkx_to_json(self.graph, output_file)

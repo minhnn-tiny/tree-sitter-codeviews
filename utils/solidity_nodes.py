@@ -24,7 +24,7 @@ def get_nodes(root_node=None, node_list={}, graph_node_list=[], index={}, record
     Returns statement level nodes recursively from the concrete syntax tree passed to it. Uses records to maintain required supplementary information. 
     noe_list maintains an intermediate representation and graph_node_list returns the final list. 
     """
-
+    # print('Getting node list: ', root_node.type)
     if root_node.type == 'parenthesized_expression' and root_node.parent is not None and root_node.parent.type == 'do_statement':
         label = 'while' + root_node.text.decode('UTF-8')
         type_label = 'while'
@@ -70,22 +70,31 @@ def get_nodes(root_node=None, node_list={}, graph_node_list=[], index={}, record
             type_label = 'expression_statement'
             
 
-            if root_node.type == 'method_declaration' or root_node.type == 'constructor_declaration':
-                # print("INSIDE METHOD DECLARATION")
+            if root_node.type == 'method_declaration' or root_node.type == 'constructor_declaration' or root_node.type == 'function_definition':
                 method_name = list(filter(lambda child : child.type == 'identifier', root_node.children))
                 parameter_list = list(filter(lambda child : child.type == 'formal_parameters' or child.type == 'formal_parameter', root_node.children))
-                label = method_name[0].text.decode('UTF-8') +parameter_list[0].text.decode('UTF-8')
+                label = method_name[0].text.decode('UTF-8') + (parameter_list[0].text.decode('UTF-8') if len(parameter_list) > 0 else '')
                 type_label = root_node.type
                 # print(label, root_node.start_point)
                 records['method_list'][method_name[0].text.decode('UTF-8')] = index[root_node.start_point,root_node.end_point,root_node.type]
                 graph_node_list.append((index[(root_node.start_point,root_node.end_point,root_node.type)], method_name[0].start_point[0], label, type_label))
             
             elif root_node.type == 'if_statement':
-                print('if root node:' ,root_node)
+                # print('if root node:' ,root_node)
                 condition = list(filter(lambda child : child.type == 'binary_expression', root_node.children))
-                print('if statement condition: ', condition)
+                # print('if statement condition: ', condition)
                 if len(condition) > 0:
-                    label = 'if' + condition[0].text.decode('UTF-8')
+                    label = 'if_' + condition[0].text.decode('UTF-8')
+                else:
+                    label = 'if'
+                type_label = 'if'
+            
+            elif root_node.type == 'else':
+                # print('if root node:' ,root_node)
+                condition = list(filter(lambda child : child.type == 'binary_expression', root_node.children))
+                # print('if statement condition: ', condition)
+                if len(condition) > 0:
+                    label = 'if_' + condition[0].text.decode('UTF-8')
                 else:
                     label = 'if'
                 type_label = 'if'
@@ -169,6 +178,17 @@ def get_nodes(root_node=None, node_list={}, graph_node_list=[], index={}, record
                 label = name[0].text.decode('UTF-8') + ":"
                 records['label_statement_map'][label] = index[(root_node.start_point,root_node.end_point,root_node.type)]
                 type_label = 'label'
+            elif root_node.type == 'variable_declaration_statement' or \
+                 root_node.type == 'local_variable_declaration' or \
+                 root_node.type == 'state_variable_declaration' or \
+                 root_node.type == 'variable_declaration':
+                # label = 'new_variable'
+                type_label = 'new_variable'
+            elif root_node.type == 'return_statement':
+                type_label = 'return'
+
+            # show more information on graph
+            label += f'\n{index[(root_node.start_point,root_node.end_point,root_node.type)]}-{type_label}-{root_node.start_point[0]+1}-{root_node.end_point[0]+1}'
             # print(root_node.start_point, root_node.start_point[0], label)
             if root_node.type != 'method_declaration' and root_node.type != 'constructor_declaration':
                 graph_node_list.append((index[(root_node.start_point,root_node.end_point,root_node.type)], root_node.start_point[0], label, type_label))
