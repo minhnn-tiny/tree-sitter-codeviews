@@ -6,6 +6,6 @@ Reference_Code/v1-multi-codeview/build
 experiments/data/
 .DS_Store
 
-.code_test_files/*
-.output_graphs/*
-.output_json/*
+code_test_files/*
+output_graphs/*
+output_json/*
