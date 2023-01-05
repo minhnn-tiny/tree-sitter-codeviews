@@ -1,7 +1,7 @@
 {
     "src_language" : "java",
     "file_name" : "Max.java",
-    "combined" : true,
+    "combined" : false,
     "code_view" : "CFG",
     "graph_format" : "dot",
     

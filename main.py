@@ -37,7 +37,9 @@ print(args)
 src_language = args['src_language']
 # Set the test file path here
 file_name = args['file_name']
-file_path = join('./code_test_files', src_language, file_name)
+# file_path = join('./code_test_files', src_language, file_name)
+# file_path = join('./code_test_files/special_cases', src_language, file_name)
+file_path = file_name
 file_handle = open(file_path, 'r')
 src_code = file_handle.read()
 file_handle.close()
@@ -49,7 +51,7 @@ graph_format = args['graph_format']
 output_dir = f"./output_graphs/{src_language}"
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
-root_name_file = file_name.split('.')[0]
+root_name_file = file_name.split('/')[-1].split('.')[0]
 output_file = join(output_dir, f'{code_view}_{root_name_file}.{graph_format}')
 print(f'Dumping graph to {output_file}')
 

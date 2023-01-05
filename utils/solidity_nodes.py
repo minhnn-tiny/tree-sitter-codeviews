@@ -16,8 +16,22 @@ def return_switch_parent(node, non_control_statement):
         if node.parent.type in non_control_statement:
             return node.parent
         node = node.parent
-
     return None
+
+
+def return_code_boundary(node):
+    node_list = [node] + node.children
+    start_points = [n.start_point for n in node_list]
+    end_points = [n.end_point for n in node_list]
+    return min(start_points, key=lambda x: x[0]), max(end_points, key=lambda x: x[0])
+
+
+def return_if_root(node):
+    current_node = node
+    while current_node.parent.type == 'if_statement':
+        current_node = current_node.parent
+    return current_node
+
 
 def get_nodes(root_node=None, node_list={}, graph_node_list=[], index={}, records = {}, statement_types = {}):
     """
@@ -25,6 +39,11 @@ def get_nodes(root_node=None, node_list={}, graph_node_list=[], index={}, record
     noe_list maintains an intermediate representation and graph_node_list returns the final list. 
     """
     # print('Getting node list: ', root_node.type)
+    # if index[(root_node.start_point,root_node.end_point,root_node.type)] in [35, 99, 174, 201, 245, 265, 307, 658, 707, 744, 771]:
+    #     print(root_node)
+    label = 'non label'
+    if root_node.type in statement_types['node_list_type']:
+        root_index = index[(root_node.start_point,root_node.end_point, root_node.type)]
     if root_node.type == 'parenthesized_expression' and root_node.parent is not None and root_node.parent.type == 'do_statement':
         label = 'while' + root_node.text.decode('UTF-8')
         type_label = 'while'
@@ -78,8 +97,16 @@ def get_nodes(root_node=None, node_list={}, graph_node_list=[], index={}, record
                 # print(label, root_node.start_point)
                 records['method_list'][method_name[0].text.decode('UTF-8')] = index[root_node.start_point,root_node.end_point,root_node.type]
                 graph_node_list.append((index[(root_node.start_point,root_node.end_point,root_node.type)], method_name[0].start_point[0], label, type_label))
+                # print(index[(root_node.start_point,root_node.end_point,root_node.type)], label, type_label)
             
             elif root_node.type == 'if_statement':
+                root_if_node = return_if_root(root_node)
+                root_if_index = index[(root_if_node.start_point,root_if_node.end_point,root_if_node.type)]
+                # end_if_node = root_node.child_by_field_name('body')
+                root_if_start_point, root_if_end_point = return_code_boundary(root_if_node)
+                records['end_if_node'][root_if_index] = (root_if_index + len(index), root_if_start_point, root_if_end_point)
+                # node_list[(root_if_start_point, root_if_end_point, 'end_if')] = end_if_node
+
                 # print('if root node:' ,root_node)
                 condition = list(filter(lambda child : child.type == 'binary_expression', root_node.children))
                 # print('if statement condition: ', condition)
@@ -116,6 +143,12 @@ def get_nodes(root_node=None, node_list={}, graph_node_list=[], index={}, record
                 label = 'for(' + init + condition + ';' + update + ')'
                 type_label = 'for'
 
+                # Add end for node
+                root_for_node = root_node
+                root_for_index = index[(root_for_node.start_point,root_for_node.end_point,root_for_node.type)]
+                root_for_start_point, root_for_end_point = return_code_boundary(root_for_node)
+                records['end_loop_node'][root_for_index] = (root_for_index + len(index), root_for_start_point, root_for_end_point)
+
             
             elif root_node.type == 'enhanced_for_statement':
                 try:
@@ -146,6 +179,12 @@ def get_nodes(root_node=None, node_list={}, graph_node_list=[], index={}, record
                     label = 'while' + condition[0].text.decode('UTF-8')
                 else: label = 'while'
                 type_label = 'while'
+
+                # Add end for node
+                root_while_node = root_node
+                root_while_index = index[(root_while_node.start_point,root_while_node.end_point,root_while_node.type)]
+                root_while_start_point, root_while_end_point = return_code_boundary(root_while_node)
+                records['end_loop_node'][root_while_index] = (root_while_index + len(index), root_while_start_point, root_while_end_point)
 
             elif root_node.type == 'do_statement':
                 label = 'do'
@@ -192,6 +231,14 @@ def get_nodes(root_node=None, node_list={}, graph_node_list=[], index={}, record
             # print(root_node.start_point, root_node.start_point[0], label)
             if root_node.type != 'method_declaration' and root_node.type != 'constructor_declaration':
                 graph_node_list.append((index[(root_node.start_point,root_node.end_point,root_node.type)], root_node.start_point[0], label, type_label))
+                if root_node.type == 'if_statement':
+                    # graph_node_list.append((index[(end_if_node.start_point,end_if_node.end_point,end_if_node.type)], end_if_node.start_point[0], 'end_if', 'end_if'))
+                    graph_node_list.append((records['end_if_node'][root_if_index][0], records['end_if_node'][root_if_index][1][0], 'end_if', 'end_if'))
+                elif root_node.type == 'for_statement':
+                    graph_node_list.append((records['end_loop_node'][root_for_index][0], records['end_loop_node'][root_for_index][1][0], 'end_for', 'end_for'))
+                elif root_node.type == 'while_statement':
+                    graph_node_list.append((records['end_loop_node'][root_while_index][0], records['end_loop_node'][root_while_index][1][0], 'end_while', 'end_while'))
+
 
     for child in root_node.children:
         root_node, node_list, graph_node_list, records = get_nodes(root_node = child, node_list = node_list, graph_node_list = graph_node_list, index = index, records = records, statement_types = statement_types)
