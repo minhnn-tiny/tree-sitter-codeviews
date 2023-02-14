@@ -8,7 +8,9 @@ class CFGGraph_solidity(CFGGraph):
         super().__init__(src_language, src_code, properties, root_node, parser)
 
         self.statement_types =  {
-            'node_list_type':['declaration', 'expression_statement', 'labeled_statement', 'if_statement', 'while_statement', 'for_statement', 'enhanced_for_statement', 'assert_statement', 'do_statement', 'break_statement', 'continue_statement', 'return_statement', 'yield_statement', 'switch_expression', 'synchronized_statement', 'local_variable_declaration', 'throw_statement', 'try_statement', 'try_with_resources_statement', 'method_declaration','constructor_declaration', 'switch_block_statement_group', 'switch_rule', 'throw_statement', 'explicit_constructor_invocation', 'variable_declaration_statement', 'state_variable_declaration', 'variable_declaration',
+            'node_list_type':['declaration', 'expression_statement', 'labeled_statement', 'if_statement', 'while_statement', 'for_statement', 'enhanced_for_statement', 'assert_statement', 'do_statement', 'break_statement', 'continue_statement', 'return_statement', 'yield_statement', 'switch_expression', 'synchronized_statement', 'local_variable_declaration', 'throw_statement', 'try_statement', 'try_with_resources_statement', 'method_declaration','constructor_declaration', 'switch_block_statement_group', 'switch_rule', 'throw_statement', 'explicit_constructor_invocation', 'variable_declaration_statement', 
+            # 'variable_declaration',
+            'state_variable_declaration', 
             # 'contract_declaration',
             # 'contract_body',
             'function_definition',
@@ -17,11 +19,13 @@ class CFGGraph_solidity(CFGGraph):
             'struct_declaration',
             'modifier_definition',
             'modifier_invocation',
-            'augmented_assignment_expression',
+            # 'augmented_assignment_expression',
             'update_expression',
             # 'block_statement',
             ],
-            'non_control_statement' : ['declaration', 'expression_statement', 'local_variable_declaration', 'variable_declaration_statement', 'state_variable_declaration', 'variable_declaration',
+            'non_control_statement' : ['declaration', 'expression_statement', 'local_variable_declaration', 'variable_declaration_statement', 
+            # 'variable_declaration',
+            'state_variable_declaration', 
             # 'contract_declaration',
             # 'contract_body',
             'function_definition',
@@ -30,7 +34,7 @@ class CFGGraph_solidity(CFGGraph):
             'struct_declaration',
             'modifier_definition',
             'modifier_invocation',
-            'augmented_assignment_expression',
+            # 'augmented_assignment_expression',
             'update_expression',
             # 'block_statement',
             ],
@@ -408,7 +412,7 @@ class CFGGraph_solidity(CFGGraph):
                 # end_if_node_index = self.get_end_if_index(node_value)
                 root_if_node = return_if_root(node_value)
                 root_if_index = self.index[(root_if_node.start_point, root_if_node.end_point, root_if_node.type)]
-                end_if_node_index = self.records['end_if_node'][root_if_index]
+                end_if_node_index = self.records['end_if_node'][root_if_index][0]
                 # print('If node: ', node_value)
                 # print('If body: ', node_value.child_by_field_name('body'))
                 # print('parrent_if: ', node_value.children)
@@ -457,7 +461,7 @@ class CFGGraph_solidity(CFGGraph):
                     # When else is not there add a direct edge from if node to the next statement
                     # print('Not else: ', next_dest_index)
                     self.add_edge(current_index, end_if_node_index, 'neg_next')
-                    self.add_edge(end_if_node_index, next_dest_index, 'next_line')
+                    # self.add_edge(end_if_node_index, next_dest_index, 'next_line')
 
 
             # ------------------------------------------------------------------------------------------------
@@ -475,7 +479,7 @@ class CFGGraph_solidity(CFGGraph):
                 # print('Last statement: ', last_line_index, line_type)
 
                 # Add end loop edge
-                end_loop_node_index = self.records['end_loop_node'][current_index]
+                end_loop_node_index = self.records['end_loop_node'][current_index][0]
                 self.add_edge(current_index, end_loop_node_index, 'neg_next')
                 # Add an edge from this node to the next line after the loop statement
                 # self.add_edge(current_index, next_dest_index, 'neg_next')
@@ -493,7 +497,7 @@ class CFGGraph_solidity(CFGGraph):
                         self.add_edge(last_line_index, current_index, 'loop_update')
                 elif line_type == 'if_statement':
                     # last_line_index, line_type = self.get_block_last_line(node_value, 'body')
-                    end_if_node_index = self.records['end_if_node'][last_line_index]
+                    end_if_node_index = self.records['end_if_node'][last_line_index][0]
                     last_block_node = self.get_block_last_node(node_value, 'body')
                     if_last_nodes = self.get_if_statement_body_last_nodes(last_block_node)
                     # print('If last nodes: ', last_block_node)
@@ -514,7 +518,7 @@ class CFGGraph_solidity(CFGGraph):
 
                 #Add a self loop in case of for loops
                 if current_node_type != 'while_statement':
-                    self.add_edge(update_node_id, current_index, 'loop_control')
+                    self.add_edge(update_node_id, current_index, 'loop_update')
 
             # ------------------------------------------------------------------------------------------------
             elif current_node_type == 'do_statement':
