@@ -57,7 +57,7 @@ print(f'Dumping graph to {output_file}')
 
 if args['save_cleaned']:
     parser = ParserDriver(src_language, src_code)
-    with open(join(args['save_cleaned'], file_name), 'w') as f:
+    with open(join(args['save_cleaned'], root_name_file), 'w') as f:
         f.write(parser.src_code)
     print(f'Save cleaned source code')
 
