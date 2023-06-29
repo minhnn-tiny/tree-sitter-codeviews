@@ -26,7 +26,7 @@ class CombinedDriver():
         if graph_format == "json":
             postprocessor.write_networkx_to_json(self.graph, output_file+".json")
         else:
-            postprocessor.write_to_dot(self.graph, output_file+".dot")
+            postprocessor.write_to_dot(self.graph, output_file)
         
 
     def check_validity(self):
@@ -84,10 +84,9 @@ class CombinedDriver():
         self.graph.add_nodes_from(self.CFG.nodes(data=True))
         self.graph.add_edges_from(self.AST.edges(data=True))
         self.graph.add_edges_from(self.CFG.edges(data=True))
-        
-
         postprocessor.write_to_dot(self.graph, "./output_graphs/AST_CFG_simple_output.dot")
         postprocessor.write_networkx_to_json(self.graph, "./output_json/AST_CFG_simple_output.json")
+
 
     def combine_AST_CFG_DFG_simple(self):
         self.graph.add_nodes_from(self.AST.nodes(data=True))

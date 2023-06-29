@@ -15,11 +15,11 @@ class CFGGraph:
         G=nx.MultiDiGraph()
         for node in CFG_node_list:
             label = str(node[1]) + '_ ' + node[2]
-            G.add_node(node[0], label = label, type_label = node[3])
+            G.add_node(node[0], label = label, type_label = node[3], method = node[4], code = node[5])
         for edge in CFG_edge_list:
             G.add_edge(edge[0], edge[1], controlflow_type = edge[2], edge_type = "CFG_edge", label = edge[2], color = 'red')
         return G
-        
+
 
     
 

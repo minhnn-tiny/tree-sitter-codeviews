@@ -46,7 +46,15 @@ class CFGGraph_solidity(CFGGraph):
                                 'struct_declaration',
                                 ],
             'outer_node_type' : ['for_statement'],
-            'boundery_node_type': ['{', '}', '(', ')', '[', ']']
+            'boundery_node_type': ['{', '}', '(', ')', '[', ']'],
+            'method_type': [
+                'function_definition',
+                'struct_declaration'
+            ],
+            'parameter_type': [
+                '_parameter_list',
+                'parameter'
+            ],
         }
 
         self.CFG_node_list = []
@@ -55,6 +63,7 @@ class CFGGraph_solidity(CFGGraph):
             'basic_blocks': {},
             'method_list': {},
             'function_calls': {},
+            'method_locations': {},
             'switch_child_map': {},
             'label_statement_map': {},
             'end_if_node': {},
@@ -89,7 +98,8 @@ class CFGGraph_solidity(CFGGraph):
         new_list = []
         for node in CFG_node_list:
             block_index = self.get_key(node[0], self.records['basic_blocks'])
-            new_list.append((node[0], node[1], node[2], node[3], block_index))     
+            # new_list.append((node[0], node[1], node[2], node[3], node[4], block_index))
+            new_list.append(node + (block_index,))
         return new_list
 
     def add_edge(self, src_node, dest_node, edge_type):
@@ -287,15 +297,15 @@ class CFGGraph_solidity(CFGGraph):
                     # Patent node of function call AST id maps to AST id or index of dummy external funciton call node
                     # self.records['function_calls'][index] = (self.index_counter, method_name)
                     if method_name not in self.records['method_list'].keys():
-                        self.CFG_node_list.append((self.index_counter, 0, 'function_call: '+method_name, 'external_function'))
+                        self.CFG_node_list.append((self.index_counter, 0, 'function_call: '+method_name, 'external_function', ''))
 
         for child in current_node.children:
             if child.is_named:
                 self.function_list(child)
 
     def add_dummy_nodes(self):
-        self.CFG_node_list.append((1, 0, 'start_node', 'start'))
-        self.CFG_node_list.append((2, 0, 'exit_node', 'exit'))
+        self.CFG_node_list.append((1, 0, 'start_node', 'start', ''))
+        self.CFG_node_list.append((2, 0, 'exit_node', 'exit', ''))
 
     def add_dummy_edges(self):
         for node_name, node_index in self.records['function_calls'].items():
@@ -377,8 +387,8 @@ class CFGGraph_solidity(CFGGraph):
 
         self.function_list(self.root_node)
 
-        self.add_dummy_nodes()
-        self.add_dummy_edges()
+        # self.add_dummy_nodes()
+        # self.add_dummy_edges()
         #------------------------------------------------------------------------------
         # At this point, the self.CFG_node_list has basic block index appended to it
         #------------------------------------------------------------------------------
@@ -499,7 +509,7 @@ class CFGGraph_solidity(CFGGraph):
                     # last_line_index, line_type = self.get_block_last_line(node_value, 'body')
                     end_if_node_index = self.records['end_if_node'][last_line_index][0]
                     last_block_node = self.get_block_last_node(node_value, 'body')
-                    if_last_nodes = self.get_if_statement_body_last_nodes(last_block_node)
+                    # if_last_nodes = self.get_if_statement_body_last_nodes(last_block_node)
                     # print('If last nodes: ', last_block_node)
                     if current_node_type != 'while_statement':
                         # print(node_value.children)

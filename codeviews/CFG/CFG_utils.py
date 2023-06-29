@@ -38,3 +38,22 @@ def get_next_index(node_indexes, node_value, statement_types):
     if isinstance(next_node, int):
         return next_node
     return node_indexes[(next_node.start_point, next_node.end_point, next_node.type)]
+
+
+def return_method_parent(node, method_tags):
+    if node.type in method_tags:
+        return node
+    while node.parent is not None:
+        if node.parent.type in method_tags:
+            return node.parent
+        node = node.parent
+    return None
+
+
+def return_method_signatures(method_node, parameter_fields):
+    method_name = list(filter(lambda child : child.type == 'identifier', method_node.children))
+    parameter_list = list(filter(lambda child : child.type in parameter_fields, method_node.children))
+    method_sig = method_name[0].text.decode('UTF-8') + '(' + ','.join([p.text.decode('UTF-8').lstrip('(').rstrip(')') for p in parameter_list]) + ')'
+    return method_name, parameter_list, method_sig
+
+    ','.join([p.text.decode('UTF-8') for p in parameter_list])

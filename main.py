@@ -52,7 +52,7 @@ output_dir = f"./output_graphs/{src_language}"
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 root_name_file = file_name.split('/')[-1].split('.')[0]
-output_file = join(output_dir, f'{code_view}_{root_name_file}.{graph_format}')
+output_file = join(output_dir, f'combined_{root_name_file}.{graph_format}')
 print(f'Dumping graph to {output_file}')
 
 if args['save_cleaned']:
@@ -67,6 +67,7 @@ if is_combined == True:
     print("Combined view")
     output_file = f"./output_graphs/{src_language}/combined_{root_name_file}_output"
     CombinedDriver(src_language = src_language, src_code = src_code, output_file = output_file, graph_format = graph_format, codeviews = codeviews)
+    
 
 # Use the following cases if you want to generate simple AST, CST, CFG or DFG without using the combined driver
 else:

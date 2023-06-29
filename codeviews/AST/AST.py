@@ -24,7 +24,10 @@ class ASTGraph:
                 label = self.label[current_node_id]
             else:
                 label = root_node.type
-            AST.add_node(current_node_id, node_type = root_node.type, label = str(root_node.start_point[0]) + "_" + label, shape = 'box', style = 'rounded, filled', fillcolor = '#BFE6D3', color = 'white')
+            # AST.add_node(current_node_id, node_type = root_node.type, label = str(root_node.start_point[0]) + "_" + label, shape = 'box', style = 'rounded, filled', fillcolor = '#BFE6D3', color = 'white')
+            _label = str(root_node.start_point[0]) + "_ " + label + "--" + root_node.type + f"\n{AST_index[(root_node.start_point,root_node.end_point,root_node.type)]}_{root_node.text.decode('UTF-8')}-{root_node.start_point[0]+1}-{root_node.end_point[0]+1}"
+            AST.add_node(current_node_id, node_type = root_node.type, label = _label, shape = 'box', style = 'rounded, filled', fillcolor = '#BFE6D3', color = 'white', code = root_node.text.decode('UTF-8'))
+
             for child in root_node.children:
                 if child.is_named: 
                     child_id = self.get_AST_nodes(child, AST, AST_index)

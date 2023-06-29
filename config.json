@@ -1,5 +1,5 @@
 {
-    "src_language" : "java",
+    "src_language" : "solidity",
     "file_name" : "Max.java",
     "combined" : false,
     "code_view" : "CFG",
@@ -8,7 +8,7 @@
     
     "combined_views" : {
         "DFG" : {
-            "exists" : true,
+            "exists" : false,
             "collapsed" : false,
             "minimized" : false,
             "statements": false
